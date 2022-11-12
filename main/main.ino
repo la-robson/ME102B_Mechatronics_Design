@@ -39,21 +39,25 @@ Servo feeder_servo;  // create servo object to control a servo
 
 // playtime - automatic start of throw game 
 volatile bool playtime = false;
+int playtime_period = 10000000;  // period * 1 us
 hw_timer_t * play_timer = NULL;
 portMUX_TYPE timerMux0 = portMUX_INITIALIZER_UNLOCKED;
 
 // mealtime - automatic dispensing of food
 volatile bool mealtime = false;
+int mealtime_period = 20000000;  // period * 1 us
 hw_timer_t * meal_timer = NULL;
 portMUX_TYPE timerMux1 = portMUX_INITIALIZER_UNLOCKED;
 
 // throw_timeout - time period to throw ball
 volatile bool throw_timeout_flag = false;
+int throw_period = 3000000;  // period * 1 us
 hw_timer_t * throw_timeout = NULL;
 portMUX_TYPE timerMux2 = portMUX_INITIALIZER_UNLOCKED;
 
 // feed timeout - time period to dispense food 
 volatile bool feed_timeout_flag = false;
+int feed_period = 2000000;  // period * 1 us
 hw_timer_t * feed_timeout = NULL;
 portMUX_TYPE timerMux3 = portMUX_INITIALIZER_UNLOCKED;
 
@@ -103,9 +107,30 @@ void setup() {
 
   // set up encoder for DC motors
 
-  // initialise timers
-  // begin , attach interupt, alarm write, alarm enable
+  // initialise timers (begin , attach interupt, alarm write, alarm enable)
+  play_timer = timerBegin(0, 80, true);  // timer 0, MWDT clock period = 12.5 ns * TIMGn_Tx_WDT_CLK_PRESCALE -> 12.5 ns * 80 -> 1000 ns = 1 us, countUp
+  timerAttachInterrupt(play_timer, onPlaytime, true); // edge (not level) triggered
+  timerAlarmWrite(play_timer, playtime_period, true); // period * 1 us, autoreload true
+  timerAlarmEnable(play_timer); // enable
+  timerRestart(play_timer);
+  
+  meal_timer = timerBegin(0, 80, true);  // timer 0, MWDT clock period = 12.5 ns * TIMGn_Tx_WDT_CLK_PRESCALE -> 12.5 ns * 80 -> 1000 ns = 1 us, countUp
+  timerAttachInterrupt(play_timer, onMealtime, true); // edge (not level) triggered
+  timerAlarmWrite(meal_timer, mealtime_period, true); // period * 1 us, autoreload true
+  timerAlarmEnable(meal_timer); // enable
+  timerRestart(meal_timer);
 
+  throw_timeout = timerBegin(0, 80, true);  // timer 0, MWDT clock period = 12.5 ns * TIMGn_Tx_WDT_CLK_PRESCALE -> 12.5 ns * 80 -> 1000 ns = 1 us, countUp
+  timerAttachInterrupt(throw_timeout, onThrowTimeout, true); // edge (not level) triggered
+  timerAlarmWrite(throw_timeout, throw_period, true); // period * 1 us, autoreload true
+  timerAlarmEnable(throw_timeout); // enable
+  timerRestart(throw_timeout);
+  
+  feed_timeout = timerBegin(0, 80, true);  // timer 0, MWDT clock period = 12.5 ns * TIMGn_Tx_WDT_CLK_PRESCALE -> 12.5 ns * 80 -> 1000 ns = 1 us, countUp
+  timerAttachInterrupt(feed_timeout, onFeedTimeout, true); // edge (not level) triggered
+  timerAlarmWrite(feed_timeout, feed_period, true); // period * 1 us, autoreload true
+  timerAlarmEnable(feed_timeout); // enable
+  timerRestart(feed_timeout);
   
 }
 

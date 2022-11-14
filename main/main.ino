@@ -96,6 +96,8 @@ void IRAM_ATTR onFeedTimeout() {
 void setup() {
   Serial.begin(115200); // DELETE FROM FINAL CODE -- DEBUG TOOL ONLY
 
+  throw_init(); 
+
   // connect servo pins 
   feeder_servo.attach(feeder_servo_pin);
   trapdoor_servo.attach(trapdoor_servo_pin);

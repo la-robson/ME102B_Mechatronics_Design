@@ -6,8 +6,8 @@
 #include <Arduino.h>
 
 //Define constants ------------------------------------
-#define BTNA 27  // check this matches hardware
-#define BTNB 26
+#define BTNA 39  // check this matches hardware
+#define BTNB 36
 #define LED 13
 
 //Setup variables ------------------------------------
@@ -31,8 +31,8 @@ void setup() {
   pinMode(LED, OUTPUT);
 
   // attatch interrupts to buttons
-  attachInterrupt(BTNA, pressedA, RISING); 
-  attachInterrupt(BTNB, pressedB, RISING); 
+  attachInterrupt(BTNA, pressedA, CHANGE); 
+  attachInterrupt(BTNB, pressedB, CHANGE); 
   
   // start serial for debugging
   Serial.begin(115200);
@@ -43,22 +43,29 @@ void setup() {
 
 //Main loop ------------------------------------
 void loop() {
+
   switch (state){
     
     // waiting for A to be pressed
     case 0:
+      Serial.println("in 0");   
       if (buttonAIsPressed) {
+        Serial.println("A pressed");   
         digitalWrite(LED, HIGH);  // turn on LED indicator
         buttonBIsPressed = false; // ensure button B flag is off before starting to look for the press
-        state = 1;        
+        state = 1;      
       }
+      break;  
 
     // waiting for B to be pressed
     case 1:
+      Serial.println("in 1");   
       if (buttonBIsPressed) {
+        Serial.println("B pressed");   
         digitalWrite(LED, LOW);  // turn on LED indicator
         buttonAIsPressed = false; // ensure button A flag is off before starting to look for the press
-        state = 0;     
+        state = 0; 
       }
+      break;
   }
 }

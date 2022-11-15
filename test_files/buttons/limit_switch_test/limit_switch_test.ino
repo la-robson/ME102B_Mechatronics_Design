@@ -5,7 +5,7 @@
 #include <Arduino.h>
 
 //Define constants ------------------------------------
-#define SWTCH 27  // check this matches hardware
+#define SWTCH 39  // check this matches hardware
 #define LED 13
 
 //Setup variables ------------------------------------
@@ -23,7 +23,7 @@ void setup() {
   pinMode(LED, OUTPUT);
 
   // attatch interrupt to switch
-  attachInterrupt(SWTCH, switchPressed, RISING); 
+  attachInterrupt(SWTCH, switch_isr, RISING); 
   
   // start serial for debugging
   Serial.begin(115200);
@@ -34,23 +34,28 @@ void setup() {
 
 //Main loop ------------------------------------
 void loop() {
+
   switch (state){
     
     // waiting for switch to be pressed
     case 0:
+      Serial.println("Hi I am in case 0");
       if (switchPressed) {
-        state = 1;        
+        state = 1;
+        Serial.println("Switch pressed");        
       }
+      break;
 
     // led flashing routine
     case 1:
       for (int i=0; i<5; i++){
         digitalWrite(LED, HIGH);
-        delay(200)
+        delay(1000);
         digitalWrite(LED, LOW);
-        delay(200)
+        delay(1000);
       }
       switchPressed = false; // ensure button A flag is off before starting to look for the press
-      state = 0;     
+      state = 0;
+      break;   
   }
 }

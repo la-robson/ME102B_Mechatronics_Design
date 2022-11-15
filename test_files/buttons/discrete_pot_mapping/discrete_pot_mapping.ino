@@ -6,7 +6,7 @@
 
 // Setup --------------------------------
 
-#define POT 13  // declare the potentiometer pin number
+#define POT 39  // declare the potentiometer pin number
 
 // define variables
 int pot_reading;                  // current potentiometer reading
@@ -27,6 +27,8 @@ void loop() {
   pot_reading  = analogRead(POT);
   output_val = pot_map(pot_reading);
   Serial.print("Output = " + String(output_val) + "Pot value = " + String(pot_reading) + '\n');
+
+  delay(1000);
 }
 
 // funtion to map the potentiometer value to 1-3

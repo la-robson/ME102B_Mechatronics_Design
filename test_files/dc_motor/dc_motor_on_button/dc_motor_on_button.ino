@@ -75,8 +75,7 @@ void loop() {
       digitalWrite(LED, HIGH);
       motor_start();
       // run for 2s
-      int mini_time = millis();
-      while (millis() - mini_time < 2000){}
+      wait(2000);
       // stop
       digitalWrite(LED, LOW);
       motor_stop();

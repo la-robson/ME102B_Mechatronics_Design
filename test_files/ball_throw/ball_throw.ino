@@ -19,7 +19,7 @@
 int state = 0;
 
 
-// define servo variables
+// define throw servo variables
 int pos = 0;    // variable to store the servo position
 const int max_pos = 90; // max angle
 const int high_speed = 1;
@@ -53,6 +53,21 @@ void IRAM_ATTR throw_button_isr() {  // the function to be called when interrupt
   throwButtonPressed = true; 
 }
 
+// playtime - automatic start of throw game 
+volatile bool playtime = false;
+int playtime_period = 5000000;  // period * 1 us
+hw_timer_t * play_timer = NULL;
+portMUX_TYPE timerMux0 = portMUX_INITIALIZER_UNLOCKED;
+
+// playtime isr
+void IRAM_ATTR onPlaytime() {
+  portENTER_CRITICAL_ISR(&timerMux0);
+  playtime = true;
+  portEXIT_CRITICAL_ISR(&timerMux0);
+}
+
+
+
 //Initialization ------------------------------------
 void setup() {
   // set button and LED pins
@@ -71,6 +86,9 @@ void setup() {
   ledcSetup(ledChan_11, freq, res); // channel 1 setup
   ledcAttachPin(mtrb1,ledChan_10);
   ledcAttachPin(mtrb2,ledChan_11);
+
+  // initialise timers 
+  playtime_init();
   
   Serial.begin(115200);
 }
@@ -82,7 +100,7 @@ void loop() {
     
     // idle
     case 0:
-      if (throwButtonPressed) {state = 1;}
+      if (throwButtonPressed or playtime) {state = 1;}
       Serial.println("in state 0");
       break;
 
@@ -104,7 +122,7 @@ void loop() {
       Serial.println("led off");
       
       // go to wait for ball return
-      throwButtonPressed = false;
+      switchPressed = false; 
       state = 2;
       break;
 
@@ -119,7 +137,9 @@ void loop() {
       wait(200);
       // check for ball return
       if (switchPressed){
-        switchPressed = false; 
+        throwButtonPressed = false;
+        playtime = false;
+        timerRestart(play_timer); // restart the playtime timer
         state = 0;
         }
       break;
@@ -130,6 +150,16 @@ void loop() {
 
 // define functions -------------------
 
+// timer init functions ---
+void playtime_init(){
+  play_timer = timerBegin(0, 80, true);  // timer 0, MWDT clock period = 12.5 ns * TIMGn_Tx_WDT_CLK_PRESCALE -> 12.5 ns * 80 -> 1000 ns = 1 us, countUp
+  timerAttachInterrupt(play_timer, onPlaytime, true); // edge (not level) triggered
+  timerAlarmWrite(play_timer, playtime_period, true); // period * 1 us, autoreload true
+  timerAlarmEnable(play_timer); // enable
+  timerRestart(play_timer);
+}
+
+// DC motor functions ---
 
 // start motor
 void motor_start(){
@@ -150,6 +180,9 @@ void dc_motor_routine(){
       wait(2000);     // run for 2s
       motor_stop();   // stop
 }
+
+
+// Servo Motor functions ---
 
 // function to move motor from start_pos to end_pos at speed (speed is time delay between each position step
 void servo_move(int start_pos, int end_pos, int servo_speed){

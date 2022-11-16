@@ -5,7 +5,7 @@
 #include <Arduino.h>
 #include <ESP32Servo.h>
 
-#define SVPIN 26
+#define SVPIN 23
 
 Servo myservo;  // create servo object to control a servo
 

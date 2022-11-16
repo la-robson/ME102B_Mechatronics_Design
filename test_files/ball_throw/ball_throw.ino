@@ -1,22 +1,37 @@
-// DC Motor triggered by limit switch
+// Logic for the ball throw side of the system
 
+#include <Arduino.h>
+#include <ESP32Servo.h>
 
 //Define constants ------------------------------------
-#define pot 14
-#define SWTCH 21  // check this matches hardware
-#define mtrb1 25
-#define mtrb2 26
-#define LED 13
+#define POT 14
+#define SWITCH 21  // limit switch for ball return sensing 
+#define TH_BTN 34  // throw button
+#define mtrb1 25   // dc motor control
+#define mtrb2 26   // dc motor control
+#define TH_SEV 23   // trapdoor servo
+#define LED 13     // indicator LED
+
 
 
 //Setup variables ------------------------------------
 // basic variables
 int state = 0;
 
-// Pwm variables
+
+// define servo variables
+int pos = 0;    // variable to store the servo position
+const int max_pos = 90; // max angle
+const int high_speed = 1;
+const int med_speed = 5;
+const int low_speed = 15;
+int curr_speed = low_speed;
+Servo myservo;  // create servo object to control a servo
+
+// Pwm variables for motor
 const int freq = 5000;
-const int ledChan_0 = 0;
-const int ledChan_1 = 1;
+const int ledChan_10 = 10;
+const int ledChan_11 = 11;
 const int res = 8;
 const int MAXPWM = 255;
 
@@ -25,29 +40,37 @@ int mtrS = 0;
 
 // potentiometer variables
 int potRead = 0;
-int potCMD = 0;
 
-// switch variables and isr
+// limit switch variables and isr
 volatile bool switchPressed = false;
 void IRAM_ATTR switch_isr() {  // the function to be called when interrupt is triggered
   switchPressed = true; 
 }
 
+// throw button variables and isr
+volatile bool throwButtonPressed = false;
+void IRAM_ATTR throw_button_isr() {  // the function to be called when interrupt is triggered
+  throwButtonPressed = true; 
+}
+
 //Initialization ------------------------------------
 void setup() {
   // set button and LED pins
-  pinMode(SWTCH, INPUT);
+  pinMode(TH_BTN, INPUT);
+  pinMode(SWITCH, INPUT);
   pinMode(LED, OUTPUT);
-  pinMode(pot,INPUT);
+  pinMode(POT,INPUT);
+  myservo.attach(TH_SEV);
 
-  // attatch interrupt to switch
-  attachInterrupt(SWTCH, switch_isr, RISING); 
+  // attatch interrupts
+  attachInterrupt(SWITCH, switch_isr, RISING); 
+  attachInterrupt(TH_BTN, throw_button_isr, RISING); 
 
   // set channels for DC motor
-  ledcSetup(ledChan_0, freq, res); // channel 0 setup
-  ledcSetup(ledChan_1, freq, res); // channel 1 setup
-  ledcAttachPin(mtrb1,ledChan_0);
-  ledcAttachPin(mtrb2,ledChan_1);
+  ledcSetup(ledChan_10, freq, res); // channel 0 setup
+  ledcSetup(ledChan_11, freq, res); // channel 1 setup
+  ledcAttachPin(mtrb1,ledChan_10);
+  ledcAttachPin(mtrb2,ledChan_11);
   
   Serial.begin(115200);
 }
@@ -56,40 +79,52 @@ void setup() {
 void loop() {
 
   switch (state){
+    
     // idle
     case 0:
-      if (switchPressed) {state = 1;}
+      if (throwButtonPressed) {state = 1;}
       Serial.println("in state 0");
       break;
 
-    // motor running
+
+    // launching ball
     case 1:
       Serial.println("in state 1");
+           
+      potRead = analogRead(POT);  // read pot
+      digitalWrite(LED, HIGH); // indicator LED on
+      Serial.println("LED on");
+      servo_move(0, max_pos, curr_speed); // open trapdoor
+      Serial.println("Open door");
+      dc_motor_routine(); // run motor
+      Serial.println("motor stop");
+      servo_move(max_pos, 0, curr_speed); // close trapdoor
+      Serial.println("close door");
+      digitalWrite(LED, LOW); // indicator LED off
+      Serial.println("led off");
       
-      // set speed -- motor currently only functions with max pwm 
-      potRead = analogRead(pot);
-      potCMD = map(potRead, 0, 4095, 0, MAXPWM);
-      mtrS = MAXPWM;
-      
-      // start 
-      digitalWrite(LED, HIGH);
-      motor_start();
-      // run for 2s
-      wait(2000);
-      // stop
-      digitalWrite(LED, LOW);
-      motor_stop();
-
-      debug_prints();
-      
-      // return to idle 
-      switchPressed = false; 
-      state = 0;
-      
+      // go to wait for ball return
+      throwButtonPressed = false;
+      state = 2;
       break;
-    
+
+
+    // waiting for ball return
+    case 2:
+      Serial.println("in state 2");
+      // flash LED
+      digitalWrite(LED, HIGH);
+      wait(200);
+      digitalWrite(LED, LOW);
+      wait(200);
+      // check for ball return
+      if (switchPressed){
+        switchPressed = false; 
+        state = 0;
+        }
+      break;
+
   }
-  
 }
 
 
@@ -98,18 +133,39 @@ void loop() {
 
 // start motor
 void motor_start(){
-  ledcWrite(ledChan_0,mtrS);
-  ledcWrite(ledChan_1,LOW);
+  ledcWrite(ledChan_10,mtrS);
+  ledcWrite(ledChan_11,LOW);
 }
 
 // stop motor
 void motor_stop(){
-  ledcWrite(ledChan_0,LOW);
-  ledcWrite(ledChan_1,LOW);
+  ledcWrite(ledChan_10,LOW);
+  ledcWrite(ledChan_11,LOW);
 }
 
-// funtion to wait a set period of time using millis
-void wait(int wait_time){
-  int mini_time = millis();
-  while (millis() - mini_time < wait_time){}
+// DC motor routine
+void dc_motor_routine(){
+      mtrS = MAXPWM;  // set speed
+      motor_start(); // start 
+      wait(2000);     // run for 2s
+      motor_stop();   // stop
+}
+
+// function to move motor from start_pos to end_pos at speed (speed is time delay between each position step
+void servo_move(int start_pos, int end_pos, int servo_speed){
+  // if start and end position are equal do nothing
+  if (start_pos == end_pos){} 
+  // if start is less than end step up to end_pos
+  else if (start_pos < end_pos) { 
+      for (pos = start_pos; pos <= end_pos; pos += 1) {
+        myservo.write(pos);
+        delay(servo_speed);
+      }
+  // if start is more than end step down to end_pos    
+  } else { 
+      for (pos = start_pos; pos >= end_pos; pos -= 1) {
+        myservo.write(pos);
+        delay(servo_speed);
+      }
+  }
 }

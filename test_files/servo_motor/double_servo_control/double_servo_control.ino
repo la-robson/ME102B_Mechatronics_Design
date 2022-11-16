@@ -12,7 +12,8 @@
 #define SEV1 26
 #define SEV2 21
 #define POT 36
-#define BTN 4
+#define BTN1 4
+#define BTN2 39
 #define LED 13
 
 // define basic variables 
@@ -31,26 +32,34 @@ const int high_speed = 1;
 const int med_speed = 5;
 const int low_speed = 9;
 
-// define button variables and isr
-volatile bool buttonIsPressed = false;
+// define button variables and isrs
+volatile bool button1IsPressed = false;
+volatile bool button2IsPressed = false;
 
-void IRAM_ATTR pressed_isr() {  // the function to be called when btn pressed
-  buttonIsPressed = true; 
+void IRAM_ATTR pressed1_isr() {  // the function to be called when btn pressed
+  button1IsPressed = true; 
 }
 
-Servo myservo1;  // create servo object to control a servo
-Servo myservo2;  // create servo object to control a servo
+void IRAM_ATTR pressed2_isr() {  // the function to be called when btn pressed
+  button2IsPressed = true; 
+}
+
+// create servo objects to control servos
+Servo myservo1;  
+Servo myservo2;
 
 void setup() {
   // Setup pins
   pinMode(LED, OUTPUT);
-  pinMode(BTN, INPUT);
+  pinMode(BTN1, INPUT);
+  pinMode(BTN2, INPUT);
   pinMode(POT, INPUT);
   myservo1.attach(SEV1);
   myservo2.attach(SEV2);
 
   // attatch interrupts to buttons
-  attachInterrupt(BTN, pressed_isr, RISING);
+  attachInterrupt(BTN1, pressed1_isr, RISING);
+  attachInterrupt(BTN2, pressed2_isr, RISING);
 
   // start serial for debugging
   Serial.begin(115200);
@@ -67,32 +76,41 @@ void loop() {
     
     // idle
     case 0:
-      // if button pressed
-      if (buttonIsPressed) {
-        state = 1; 
-      }
+      // if buttons pressed
+      if (button1IsPressed) {state = 1;}
+      if (button2IsPressed) {state = 2;}
       break;
 
-    // servo moving 
+    // servo1 moving 
     case 1:
       digitalWrite(LED, HIGH);   // turn on LED 
-  
       // get curr speed from pot
       pot_reading  = analogRead(POT);
       curr_speed = pot_map(pot_reading);
-      
-      
       // scan from 0 to max and back at the selected speed
       servo1_move(0, max_pos, curr_speed);
-      servo2_move(0, max_pos, curr_speed);
       delay(200);
       servo1_move(max_pos, 0, curr_speed);
-      servo2_move(max_pos, 0, curr_speed);
-
       digitalWrite(LED, LOW);   // turn off LED 
-      
       // return to idle
-      buttonIsPressed = false;
+      button1IsPressed = false;
+      state = 0;    
+      break;
+
+
+    // servo 2 moving 
+    case 2:
+      digitalWrite(LED, HIGH);   // turn on LED 
+      // get curr speed from pot
+      pot_reading  = analogRead(POT);
+      curr_speed = pot_map(pot_reading);    
+      // scan from 0 to max and back at the selected speed
+      servo2_move(0, max_pos, curr_speed);
+      delay(200);
+      servo2_move(max_pos, 0, curr_speed);
+      digitalWrite(LED, LOW);   // turn off LED 
+      // return to idle
+      button2IsPressed = false;
       state = 0;    
       break;
   }
@@ -138,11 +156,4 @@ void servo2_move(int start_pos, int end_pos, int servo_speed){
         delay(servo_speed);
       }
   }
-}
-
-// funtion to map the potentiometer value to low med high _speed
-int pot_map(int reading){
-  if (reading < max_pot_reading/3) {return low_speed;}
-  else if (reading < max_pot_reading*2/3) {return med_speed;}
-  else {return high_speed;}
 }

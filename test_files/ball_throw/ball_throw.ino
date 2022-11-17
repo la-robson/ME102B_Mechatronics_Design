@@ -6,7 +6,7 @@
 //Define constants ------------------------------------
 #define POT 14
 #define SWITCH 21  // limit switch for ball return sensing 
-#define TH_BTN 34  // throw button
+#define TH_BTN 36  // throw button
 #define mtrb1 25   // dc motor control
 #define mtrb2 26   // dc motor control
 #define TH_SEV 23   // trapdoor servo
@@ -26,7 +26,7 @@ const int high_speed = 1;
 const int med_speed = 5;
 const int low_speed = 15;
 int curr_speed = low_speed;
-Servo myservo;  // create servo object to control a servo
+Servo myservo;  // create servo object to control servos
 
 // Pwm variables for motor
 const int freq = 5000;
@@ -55,7 +55,7 @@ void IRAM_ATTR throw_button_isr() {  // the function to be called when interrupt
 
 // playtime - automatic start of throw game 
 volatile bool playtime = false;
-int playtime_period = 5000000;  // period * 1 us
+int playtime_period = 5000000*1 ;  // period * 1 us (5 mil = 5s)
 hw_timer_t * play_timer = NULL;
 portMUX_TYPE timerMux0 = portMUX_INITIALIZER_UNLOCKED;
 

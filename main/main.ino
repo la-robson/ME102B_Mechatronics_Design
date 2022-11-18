@@ -50,7 +50,7 @@ int potRead = 0;
 // limit switch variables and isr
 volatile bool switchPressed = false;
 void IRAM_ATTR switch_isr() {  // the function to be called when interrupt is triggered
-  switchPressed = true; 
+  switchPressed = true;   
 }
 
 // throw button variables and isr
@@ -152,6 +152,7 @@ void loop() {
     // waiting for ball return
     case 3:
       Serial.println("In state 3");
+      
       // flash LED
       flash_LED();
       // check for ball return
@@ -159,7 +160,7 @@ void loop() {
         throwButtonPressed = false;
         playtime = false;
         timerRestart(play_timer); // restart the playtime timer
-        state = 1;
+        state = 4;
         }
       break;
 
@@ -167,14 +168,13 @@ void loop() {
     // dispensing food
     case 4:
       Serial.println("In state 4");
-      // dispense food
-      fd_servo_move(0, max_pos, curr_speed); // open feeder gate 
-      wait(2000); // delay 
-      fd_servo_move(max_pos, 0, curr_speed); // close feeder gate
+      dispense_food();  // dispense food
+
       
       // return to idle state 
       // reset flags
       feedButtonPressed = false;
+      throwButtonPressed = false;
       state = 1;
       break;
 
@@ -184,6 +184,8 @@ void loop() {
 
 // define functions -------------------
 
+
+
 // timer init functions ---
 void timer_init(){
   // playtime
@@ -192,6 +194,7 @@ void timer_init(){
   timerAlarmWrite(play_timer, playtime_period, true); // period * 1 us, autoreload true
   timerAlarmEnable(play_timer); // enable
   timerRestart(play_timer);
+  
   // mealtime
   meal_timer = timerBegin(0, 80, true);  // timer 0, MWDT clock period = 12.5 ns * TIMGn_Tx_WDT_CLK_PRESCALE -> 12.5 ns * 80 -> 1000 ns = 1 us, countUp
   timerAttachInterrupt(play_timer, onMealtime, true); // edge (not level) triggered

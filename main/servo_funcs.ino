@@ -27,13 +27,13 @@ void fd_servo_move(int start_pos, int end_pos, int servo_speed){
   // if start is less than end step up to end_pos
   else if (start_pos < end_pos) { 
       for (pos = start_pos; pos <= end_pos; pos += 1) {
-        th_servo.write(pos);
+        fd_servo.write(pos);
         delay(servo_speed);
       }
   // if start is more than end step down to end_pos    
   } else { 
       for (pos = start_pos; pos >= end_pos; pos -= 1) {
-        th_servo.write(pos);
+        fd_servo.write(pos);
         delay(servo_speed);
       }
   }

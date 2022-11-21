@@ -1,4 +1,6 @@
+// Initialisation functions ---
 
+// init for all interrupts 
 void interrupt_init(){
   attachInterrupt(SWITCH, switch_isr, RISING); 
   attachInterrupt(TH_BTN, throw_button_isr, RISING); 

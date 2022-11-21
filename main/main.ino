@@ -21,32 +21,35 @@
 
 
 //Setup variables ------------------------------------
-// basic variables
+
+// basic operation variables
 int state = 1;
+int feed_count = 0; // number of treats dispensed 
+const int max_feed_count = 5;   // max number of treats allowed between mealtimes
 
 // potentiometer variables
 int pot_reading;                  // current potentiometer reading
 const int max_pot_reading = 4095; // define maximum potentiometer reading
 int feed_time;
 
-// define throw servo variables
+// define servo variables
 int pos = 0;    // variable to store the servo position
 const int max_pos = 90; // max angle
 const int high_speed = 1;
 const int med_speed = 5;
 const int low_speed = 15;
-int curr_speed = low_speed;
-Servo th_servo;  // create servo objects
+int curr_speed = low_speed;   // this is coded in so we can easily modify servo speeds
+
+// create servo objects
+Servo th_servo;  
 Servo fd_servo;
 
-// Pwm variables for motor
+// DC Motor variables
 const int freq = 5000;
 const int ledChan_10 = 10;
 const int ledChan_11 = 11;
 const int res = 8;
 const int MAXPWM = 255;
-
-// DC Motor variables
 int mtrS = 0;
 
 // limit switch variables and isr
@@ -69,7 +72,7 @@ void IRAM_ATTR feed_button_isr() {  // the function to be called when interrupt 
 
 // playtime - automatic start of throw game 
 volatile bool playtime = false;
-int playtime_period = 5000000*1 ;  // period * 1 us (5 mil = 5s)
+int playtime_period = 5000000 ;  // period * 1 us (set to 5s for testing)
 hw_timer_t * play_timer = NULL;
 portMUX_TYPE timerMux0 = portMUX_INITIALIZER_UNLOCKED;
 
@@ -82,7 +85,7 @@ void IRAM_ATTR onPlaytime() {
 
 // mealtime - automatic dispensing of food
 volatile bool mealtime = false;
-int mealtime_period = 20000000;  // period * 1 us
+int mealtime_period = 60000000;  // period * 1 us (set to 60s for testing)
 hw_timer_t * meal_timer = NULL;
 portMUX_TYPE timerMux1 = portMUX_INITIALIZER_UNLOCKED;
 
@@ -112,7 +115,11 @@ void loop() {
     case 1:
       Serial.println("In state 1");
       if (throwButtonPressed or playtime) {state = 2;}
-      if (feedButtonPressed) {state = 4;}
+      else if (feedButtonPressed) {to_treat_state();}
+      else if (mealtime) {
+        feed_count = 0;   // reset feed counter
+        state = 4;
+      }
       break;
 
 
@@ -130,13 +137,14 @@ void loop() {
     case 3:
       Serial.println("In state 3");
       flash_LED();  // flash LED
+      
       // check for ball return
       if (switchPressed){
-        throwButtonPressed = false;
-        playtime = false;
-        timerRestart(play_timer); // restart the playtime timer
-        state = 4;
-        }
+        throw_ball_reset(); // reset flags and timer       
+        // if allowed more treats get treat, if over max go back to idle
+        if (feed_count <= max_feed_count) {to_treat_state();}
+        else {to_idle_state();}
+      }
       break;
       
 
@@ -144,14 +152,8 @@ void loop() {
     case 4:
       Serial.println("In state 4");
       dispense_food();  // dispense food
-      // return to idle state 
-      feedButtonPressed = false;
-      throwButtonPressed = false;
-      state = 1;
+       to_idle_state();  // return to idle state 
       break;
 
   }
 }
-
-
-// define functions -------------------

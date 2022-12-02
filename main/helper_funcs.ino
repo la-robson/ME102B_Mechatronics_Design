@@ -18,7 +18,7 @@ void flash_LED(){
 
 // map the potentiometer to the feed drop time for a small medium or big food portion
 int pot_map_time(int reading){
-  if (reading < max_pot_reading/3) {return 1000;}
-  else if (reading < max_pot_reading*2/3) {return 2000;}
-  else {return 3000;}
+  if (reading < max_pot_reading/3) {return small_feed;}
+  else if (reading < max_pot_reading*2/3) {return med_feed;}
+  else {return large_feed;}
 }

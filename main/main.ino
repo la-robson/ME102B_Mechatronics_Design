@@ -33,6 +33,9 @@ const int max_feed_count = 5;   // max number of treats allowed between mealtime
 int pot_reading;                  // current potentiometer reading
 const int max_pot_reading = 4095; // define maximum potentiometer reading
 int feed_time;
+const int large_feed = 3000;
+const int med_feed = 2000;
+const int small_feed = 1000;
 
 // define servo variables
 int pos = 0;    // variable to store the servo position
@@ -72,21 +75,8 @@ void IRAM_ATTR feed_button_isr() {  // the function to be called when interrupt 
   feedButtonPressed = true; 
 }
 
-// playtime - automatic start of throw game 
-volatile bool playtime = false;
-int playtime_period = 5000000 ;  // period * 1 us (set to 5s for testing)
-hw_timer_t * play_timer = NULL;
-portMUX_TYPE timerMux0 = portMUX_INITIALIZER_UNLOCKED;
-
-// playtime isr
-void IRAM_ATTR onPlaytime() {
-  portENTER_CRITICAL_ISR(&timerMux0);
-  playtime = true;
-  portEXIT_CRITICAL_ISR(&timerMux0);
-}
-
 // mealtime - automatic dispensing of food
-volatile bool mealtime = false;
+volatile int mealtime = 0;      // mealtime flag, 0-not triggered, 1-triggered but not "seen", 2-dispensing meal
 int mealtime_period = 60000000;  // period * 1 us (set to 60s for testing)
 hw_timer_t * meal_timer = NULL;
 portMUX_TYPE timerMux1 = portMUX_INITIALIZER_UNLOCKED;
@@ -94,7 +84,7 @@ portMUX_TYPE timerMux1 = portMUX_INITIALIZER_UNLOCKED;
 // mealtime isr
 void IRAM_ATTR onMealtime() {
   portENTER_CRITICAL_ISR(&timerMux1);
-  mealtime = true;
+  mealtime = 1;
   portEXIT_CRITICAL_ISR(&timerMux1);
 }
 
@@ -116,12 +106,9 @@ void loop() {
     // idle
     case 1:
       Serial.println("In state 1");
-      if (throwButtonPressed or playtime) {state = 2;}
+      if (throwButtonPressed) {state = 2;}
       else if (feedButtonPressed) {to_treat_state();}
-      else if (mealtime) {
-        feed_count = 0;   // reset feed counter
-        state = 4;
-      }
+      else if (mealtime == 1) {to_mealtime();}
       break;
 
 
@@ -129,9 +116,7 @@ void loop() {
     case 2:
       Serial.println("In state 2");
       throw_ball(); // throw ball
-      // go to wait for ball return
-      switchPressed = false; 
-      state = 3;
+      to_wait_4ball(); // go to wait for ball return
       break;
 
 
@@ -142,6 +127,7 @@ void loop() {
       // check for ball return
       if (switchPressed){
         throw_ball_reset(); // reset flags and timer       
+        
         // if allowed more treats get treat, if over max go back to idle
         if (feed_count <= max_feed_count) {to_treat_state();}
         else {to_idle_state();}
@@ -153,7 +139,7 @@ void loop() {
     case 4:
       Serial.println("In state 4");
       dispense_food();  // dispense food
-       to_idle_state();  // return to idle state 
+      to_idle_state();  // return to idle state 
       break;
 
   }

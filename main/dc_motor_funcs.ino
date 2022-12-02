@@ -6,7 +6,6 @@ void dc_motor_init(){
   ledcSetup(ledChan_11, freq, res);
   ledcAttachPin(mtrb1,ledChan_10);
   ledcAttachPin(mtrb2,ledChan_11);
-  // enable PMW for driver 
   digitalWrite(En_L,HIGH);
   digitalWrite(En_R,HIGH);
 }
@@ -28,6 +27,6 @@ void motor_stop(){
 void dc_motor_routine(){
       mtrS = MAXPWM;  // set speed
       motor_start(); // start 
-      wait(2000);     // run for 2s
+      wait(1000);     // run for 2s
       motor_stop();   // stop
 }

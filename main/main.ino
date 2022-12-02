@@ -12,41 +12,40 @@
 #define SWITCH 21  // limit switch for ball return sensing 
 #define TH_BTN 39  // throw button
 #define FD_BTN 36    // feeder button
-#define LED 13     // indicator LED
-#define TH_SEV 23   // trapdoor servo
-#define FD_SEV 4    // feeder servo
 #define mtrb1 25   // dc motor control
 #define mtrb2 26   // dc motor control
+#define TH_SEV 23   // trapdoor servo
+#define FD_SEV 4    // feeder servo
+#define LED 13     // indicator LED
 #define En_R 12   //enable pwm pin 
-#define En_L 12   //enable pwm pin 
-
+#define En_L 12
 
 
 //Setup variables ------------------------------------
 
+
 // basic operation variables
 int state = 1;
 int feed_count = 0; // number of treats dispensed 
-const int max_feed_count = 5;   // max number of treats allowed between mealtimes
+const int max_feed_count = 3;   // max number of treats allowed between mealtimes
+
 
 // potentiometer variables
 int pot_reading;                  // current potentiometer reading
 const int max_pot_reading = 4095; // define maximum potentiometer reading
 int feed_time;
-const int large_feed = 3000;
-const int med_feed = 2000;
-const int small_feed = 1000;
+const int large_feed = 1000;
+const int med_feed = 750;
+const int small_feed = 400;
 
-// define servo variables
+// define throw servo variables
 int pos = 0;    // variable to store the servo position
 const int max_pos = 90; // max angle
 const int high_speed = 1;
 const int med_speed = 5;
 const int low_speed = 15;
-int curr_speed = low_speed;   // this is coded in so we can easily modify servo speeds
-
-// create servo objects
-Servo th_servo;  
+int curr_speed = high_speed;
+Servo th_servo;  // create servo objects
 Servo fd_servo;
 
 // DC Motor variables
@@ -54,7 +53,7 @@ const int freq = 5000;
 const int ledChan_10 = 10;
 const int ledChan_11 = 11;
 const int res = 8;
-const int MAXPWM = 125;   // limit to half power for effective operation
+const int MAXPWM = 150;
 int mtrS = 0;
 
 // limit switch variables and isr
@@ -73,11 +72,15 @@ void IRAM_ATTR throw_button_isr() {  // the function to be called when interrupt
 volatile bool feedButtonPressed = false;
 void IRAM_ATTR feed_button_isr() {  // the function to be called when interrupt is triggered
   feedButtonPressed = true; 
+  
 }
+
+
+
 
 // mealtime - automatic dispensing of food
 volatile int mealtime = 0;      // mealtime flag, 0-not triggered, 1-triggered but not "seen", 2-dispensing meal
-int mealtime_period = 60000000;  // period * 1 us (set to 60s for testing)
+int mealtime_period = 60*1000000;  // period * 1 us (set to 60s for testing)
 hw_timer_t * meal_timer = NULL;
 portMUX_TYPE timerMux1 = portMUX_INITIALIZER_UNLOCKED;
 
@@ -101,13 +104,14 @@ void setup() {
 // main loop ---------------------------------------
 void loop() {
 
-  switch (state){
+switch (state){
     
     // idle
     case 1:
       Serial.println("In state 1");
+      
       if (throwButtonPressed) {state = 2;}
-      else if (feedButtonPressed) {to_treat_state();}
+      else if ((feedButtonPressed) and (feed_count <= max_feed_count)) {to_treat_state();}
       else if (mealtime == 1) {to_mealtime();}
       break;
 

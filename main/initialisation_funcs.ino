@@ -1,6 +1,6 @@
 // Initialisation functions ---
 
-// init for all interrupts 
+
 void interrupt_init(){
   attachInterrupt(SWITCH, switch_isr, RISING); 
   attachInterrupt(TH_BTN, throw_button_isr, RISING); 
@@ -14,6 +14,9 @@ void pins_init(){
   pinMode(SWITCH, INPUT);
   pinMode(LED, OUTPUT);
   pinMode(POT,INPUT);
+  pinMode(En_L,OUTPUT);
+  pinMode(En_R,OUTPUT);
   th_servo.attach(TH_SEV);
   fd_servo.attach(FD_SEV);
+  
 }

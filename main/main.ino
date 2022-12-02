@@ -1,7 +1,7 @@
 /* ME102b  project 
  *  Pet entertainment device control
  *  Script to control a tennis ball launcher and treat dispenser
- *  Authors: Lauren Robson, Travis Carol
+ *  Authors: Lauren Robson, Travis Carroll
  */
 
 #include <Arduino.h>
@@ -12,11 +12,13 @@
 #define SWITCH 21  // limit switch for ball return sensing 
 #define TH_BTN 39  // throw button
 #define FD_BTN 36    // feeder button
-#define mtrb1 25   // dc motor control
-#define mtrb2 26   // dc motor control
+#define LED 13     // indicator LED
 #define TH_SEV 23   // trapdoor servo
 #define FD_SEV 4    // feeder servo
-#define LED 13     // indicator LED
+#define mtrb1 25   // dc motor control
+#define mtrb2 26   // dc motor control
+#define En_R 12   //enable pwm pin 
+#define En_L 12   //enable pwm pin 
 
 
 
@@ -49,7 +51,7 @@ const int freq = 5000;
 const int ledChan_10 = 10;
 const int ledChan_11 = 11;
 const int res = 8;
-const int MAXPWM = 255;
+const int MAXPWM = 125;   // limit to half power for effective operation
 int mtrS = 0;
 
 // limit switch variables and isr
@@ -136,8 +138,7 @@ void loop() {
     // waiting for ball return
     case 3:
       Serial.println("In state 3");
-      flash_LED();  // flash LED
-      
+      flash_LED();  // flash LED to indicate waiting for ball
       // check for ball return
       if (switchPressed){
         throw_ball_reset(); // reset flags and timer       

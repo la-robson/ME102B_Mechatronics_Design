@@ -13,6 +13,9 @@ void pins_init(){
   pinMode(FD_BTN, INPUT);
   pinMode(SWITCH, INPUT);
   pinMode(LED, OUTPUT);
+  pinMode(LED1, OUTPUT);
+  pinMode(LED2, OUTPUT);
+  pinMode(LED3, OUTPUT);
   pinMode(POT,INPUT);
   pinMode(En_L,OUTPUT);
   pinMode(En_R,OUTPUT);

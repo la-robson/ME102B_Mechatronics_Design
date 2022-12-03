@@ -16,7 +16,10 @@
 #define mtrb2 26   // dc motor control
 #define TH_SEV 23   // trapdoor servo
 #define FD_SEV 4    // feeder servo
-#define LED 13     // indicator LED
+#define LED 13     // indicator LED built into board
+#define LED1 33     // indicator LED (high)
+#define LED2 18     // indicator LED (med)
+#define LED3 27     // indicator LED (low)
 #define En_R 12   //enable pwm pin 
 #define En_L 12
 
@@ -109,7 +112,8 @@ switch (state){
     // idle
     case 1:
       Serial.println("In state 1");
-      
+
+      pot_led_indicator();  // light LED corresponding to pot reading
       if (throwButtonPressed) {state = 2;}
       else if ((feedButtonPressed) and (feed_count <= max_feed_count)) {to_treat_state();}
       else if (mealtime == 1) {to_mealtime();}
@@ -127,6 +131,7 @@ switch (state){
     // waiting for ball return
     case 3:
       Serial.println("In state 3");
+      pot_led_indicator();  // light LED corresponding to pot reading
       flash_LED();  // flash LED to indicate waiting for ball
       // check for ball return
       if (switchPressed){

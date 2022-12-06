@@ -11,27 +11,29 @@ void dispense_food(){
     feed_time = pot_map_time(pot_reading);
   }
   // dispense food
-  fd_servo_move(0, 15, curr_speed); // open feeder gate 
+  fd_servo_move(0, 25, curr_speed); // open feeder gate 
   wait(feed_time); // delay 
-  fd_servo_move(15, 0, curr_speed); // close feeder gate
+  fd_servo_move(25, 0, curr_speed); // close feeder gate
 }
 
 
 // throw ball 
 void throw_ball(){
+  
   digitalWrite(LED, HIGH); // indicator LED on
   th_servo_move(90, 0, curr_speed); // open trapdoor
-  Serial.println("Motor go");
   dc_motor_routine(); // run motor
-  Serial.println("Motor stop");
   th_servo_move(0, 90, curr_speed); // close trapdoor
   digitalWrite(LED, LOW); // indicator LED off
+  ball_returned = false;    // set ball return to false
  }
 
 
-// reset after throwing ball 
+// reset after ball returned
 void throw_ball_reset(){
   throwButtonPressed = false;
+  ball_returned = true;
+  switchPressed = false; 
 }
 
 
@@ -54,6 +56,7 @@ void to_mealtime(){
 void to_idle_state(){
   feedButtonPressed = false;
   throwButtonPressed = false;
+  switchPressed = false;
   if (mealtime == 2){mealtime = 0;}
   state = 1;
 }

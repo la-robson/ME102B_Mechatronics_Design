@@ -31,6 +31,7 @@
 int state = 1;
 int feed_count = 0; // number of treats dispensed 
 const int max_feed_count = 3;   // max number of treats allowed between mealtimes
+volatile bool ball_returned = true; // if ball is returned to tube
 
 
 // potentiometer variables
@@ -56,7 +57,7 @@ const int freq = 5000;
 const int ledChan_10 = 10;
 const int ledChan_11 = 11;
 const int res = 8;
-const int MAXPWM = 150;
+const int MAXPWM = 125;
 int mtrS = 0;
 
 // limit switch variables and isr
@@ -77,9 +78,6 @@ void IRAM_ATTR feed_button_isr() {  // the function to be called when interrupt 
   feedButtonPressed = true; 
   
 }
-
-
-
 
 // mealtime - automatic dispensing of food
 volatile int mealtime = 0;      // mealtime flag, 0-not triggered, 1-triggered but not "seen", 2-dispensing meal
@@ -112,10 +110,10 @@ switch (state){
     // idle
     case 1:
       Serial.println("In state 1");
-
       pot_led_indicator();  // light LED corresponding to pot reading
-      if (throwButtonPressed) {state = 2;}
-      else if ((feedButtonPressed) and (feed_count <= max_feed_count)) {to_treat_state();}
+      if (throwButtonPressed and ball_returned) {state = 2;}
+      else if (switchPressed and !ball_returned) {throw_ball_reset();}
+      else if (feedButtonPressed and (feed_count < max_feed_count)) {to_treat_state();}
       else if (mealtime == 1) {to_mealtime();}
       break;
 
@@ -133,14 +131,15 @@ switch (state){
       Serial.println("In state 3");
       pot_led_indicator();  // light LED corresponding to pot reading
       flash_LED();  // flash LED to indicate waiting for ball
+      
       // check for ball return
       if (switchPressed){
         throw_ball_reset(); // reset flags and timer       
-        
         // if allowed more treats get treat, if over max go back to idle
-        if (feed_count <= max_feed_count) {to_treat_state();}
+        if (feed_count < max_feed_count) {to_treat_state();}
         else {to_idle_state();}
       }
+      else if (mealtime == 1) {to_mealtime();}
       break;
       
 

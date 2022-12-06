@@ -1,6 +1,5 @@
 // Servo Motor functions ---
 
-
 // function to move throw servo motor from start_pos to end_pos at speed (speed is time delay between each position step
 void th_servo_move(int start_pos, int end_pos, int servo_speed){
   // if start and end position are equal do nothing
@@ -9,13 +8,13 @@ void th_servo_move(int start_pos, int end_pos, int servo_speed){
   else if (start_pos < end_pos) { 
       for (pos = start_pos; pos <= end_pos; pos += 1) {
         th_servo.write(pos);
-        delay(servo_speed);
+        wait(servo_speed);
       }
   // if start is more than end step down to end_pos    
   } else { 
       for (pos = start_pos; pos >= end_pos; pos -= 1) {
         th_servo.write(pos);
-        delay(servo_speed);
+        wait(servo_speed);
       }
   }
 }
@@ -29,13 +28,13 @@ void fd_servo_move(int start_pos, int end_pos, int servo_speed){
   else if (start_pos < end_pos) { 
       for (pos = start_pos; pos <= end_pos; pos += 1) {
         fd_servo.write(pos);
-        delay(servo_speed);
+        wait(servo_speed);
       }
   // if start is more than end step down to end_pos    
   } else { 
       for (pos = start_pos; pos >= end_pos; pos -= 1) {
         fd_servo.write(pos);
-        delay(servo_speed);
+        wait(servo_speed);
       }
   }
 }
